@@ -1,4 +1,4 @@
-name: FinOps Guardian - Cost Check
+name: Infracost
 
 on:
   pull_request:
@@ -12,21 +12,24 @@ jobs:
     name: Infracost cost estimate
     runs-on: ubuntu-latest
     steps:
-      - name: Check out base code
+      - name: Check out base branch
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.pull_request.base.ref }}
+          ref: ${{ github.event.pull_request.base.sha }}
 
-      - name: Check out PR code
+      - name: Setup Infracost # Esto es solo para cachear los precios
+        uses: infracost/infracost-github-action@v2
+        with:
+          api-key: ${{ secrets.INFRACOST_API_KEY }}
+
+      - name: Check out PR branch
         uses: actions/checkout@v4
         with:
           path: pr
 
-      # --- ¡LA CORRECCIÓN DEFINITIVA ESTÁ AQUÍ! ---
-      # La ruta correcta es 'infracost/infracost-github-action@v2'
       - name: Run Infracost
         uses: infracost/infracost-github-action@v2
         with:
           path: pr/
-          api-key: ${{ secrets.INFRACOST_API_KEY }}
           behavior: update
+          api-key: ${{ secrets.INFRACOST_API_KEY }}
