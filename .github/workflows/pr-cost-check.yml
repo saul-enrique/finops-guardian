@@ -12,20 +12,19 @@ jobs:
     name: Infracost cost estimate
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Check out base branch
+        uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.base.sha }}
 
-      - uses: infracost/infracost-github-action@v2
-        with:
-          api-key: ${{ secrets.INFRACOST_API_KEY }}
-
-      - uses: actions/checkout@v4
+      - name: Check out PR branch
+        uses: actions/checkout@v4
         with:
           path: pr
 
-      - uses: infracost/infracost-github-action@v2
+      - name: Run Infracost
+        uses: infracost/infracost-github-action@v2
         with:
           path: pr/
-          behavior: update
           api-key: ${{ secrets.INFRACOST_API_KEY }}
+          behavior: update
