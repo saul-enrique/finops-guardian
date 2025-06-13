@@ -31,8 +31,6 @@ jobs:
 
       - name: Run FinOps Guardian Analysis
         id: guardian_analysis
-        # --- ¡LA CORRECCIÓN FINAL ESTÁ AQUÍ! ---
-        # Pasamos el commit SHA exacto. Esto es a prueba de balas.
         run: go run main.go main ${{ github.sha }}
 
       - name: Post Cost Report to PR
