@@ -5,56 +5,33 @@ on:
     branches: [ main ]
 
 permissions:
+  contents: read
   pull-requests: write
 
 jobs:
-  cost-analysis:
+  infracost:
+    name: Run Infracost diff
     runs-on: ubuntu-latest
     steps:
-      - name: Check out full repository history
+      - name: Check out base code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          # Esto es importante, la acción de Infracost necesita la referencia base.
+          ref: ${{ github.event.pull_request.base.ref }}
 
-      - name: Setup Go
-        uses: actions/setup-go@v5
+      - name: Check out PR code
+        uses: actions/checkout@v4
         with:
-          go-version: '1.22'
+          # Y el código del PR se coloca en una carpeta separada para comparar.
+          path: 'pr'
 
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
-
-      - name: Setup Infracost
-        uses: infracost/actions/setup@v2
+      - name: Run Infracost diff
+        uses: infracost/actions/diff@v2
         with:
+          # Compara el directorio base con el directorio 'pr'.
+          path: ./pr/
+          compare-to: ./
+          # El comportamiento 'update' buscará y actualizará su propio comentario.
+          behavior: update
+          # Le pasamos la API key de forma segura.
           api-key: ${{ secrets.INFRACOST_API_KEY }}
-
-      - name: Run FinOps Guardian Analysis
-        id: guardian_analysis
-        # Simplemente ejecutamos el programa. Ya no necesita argumentos.
-        run: go run main.go
-
-      - name: Post Cost Report to PR
-        uses: actions/github-script@v7
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            const output = ${{ toJSON(steps.guardian_analysis.outputs.stdout) }};
-            const data = JSON.parse(output);
-            const body = `
-            ### 🛡️ Reporte de FinOps Guardian 🛡️
-
-            ¡Análisis de costos completado por tu bot personal!
-
-            | Descripción | Costo Mensual Estimado |
-            | :--- | :--- |
-            | Costo Anterior | **$${data.pastTotalMonthlyCost || '0.00'}** |
-            | Nuevo Costo | **$${data.totalMonthlyCost || '0.00'}** |
-            | **Impacto del Cambio** | **$${data.diffTotalMonthlyCost || '0.00'}** |
-            `;
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: body
-            });
