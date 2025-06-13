@@ -27,3 +27,7 @@ resource "aws_instance" "web_server" {
     Name = "WebApp Server"
   }
 }
+resource "aws_instance" "another_server" {
+  ami           = "ami-0c55b159cbfafe1f0"
+  instance_type = "t2.small" # Un tipo diferente para que el costo sea distinto
+}
