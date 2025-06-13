@@ -31,3 +31,13 @@ resource "aws_instance" "another_server" {
   ami           = "ami-0c55b159cbfafe1f0"
   instance_type = "t2.small" # Un tipo diferente para que el costo sea distinto
 }
+# Simulación de una nueva base de datos
+resource "aws_db_instance" "default" {
+  allocated_storage    = 10
+  engine               = "mysql"
+  engine_version       = "8.0"
+  instance_class       = "db.t3.micro"
+  username             = "foo"
+  password             = "foobarbaz"
+  skip_final_snapshot  = true
+}
