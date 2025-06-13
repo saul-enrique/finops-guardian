@@ -7,18 +7,15 @@ import (
 	"os/exec"
 )
 
-// No necesitamos la struct aquí, ya que no vamos a analizar el JSON en Go.
-
 func main() {
 	if len(os.Args) != 3 {
-		fmt.Fprintln(os.Stderr, "Uso: finops-guardian <rama_base> <rama_a_restaurar>")
+		fmt.Fprintln(os.Stderr, "Uso: finops-guardian <rama_base> <ref_a_restaurar>")
 		os.Exit(1)
 	}
 	baseBranch := os.Args[1]
-	returnBranch := os.Args[2]
+	returnRef := os.Args[2] // El 'ref' (commit SHA o rama) al que volver
 	baselineFile := "infracost-base.json"
 
-	// ... (Toda la lógica de checkout y diff se mantiene igual) ...
 	if err := exec.Command("git", "checkout", baseBranch).Run(); err != nil {
 		fmt.Fprintf(os.Stderr, "Error al cambiar a la rama base: %v\n", err)
 		os.Exit(1)
@@ -28,8 +25,8 @@ func main() {
 		fmt.Fprintf(os.Stderr, "Error al crear la línea base de Infracost: %s\n", string(output))
 		os.Exit(1)
 	}
-	if err := exec.Command("git", "checkout", returnBranch).Run(); err != nil {
-		fmt.Fprintf(os.Stderr, "Error al volver a la rama de trabajo: %v\n", err)
+	if err := exec.Command("git", "checkout", returnRef).Run(); err != nil {
+		fmt.Fprintf(os.Stderr, "Error al volver a la referencia de trabajo: %v\n", err)
 		os.Exit(1)
 	}
 	diffCmd := exec.Command("infracost", "diff", "--path", ".", "--compare-to", baselineFile, "--format", "json", "--no-color")
@@ -40,8 +37,5 @@ func main() {
 		fmt.Fprintf(os.Stderr, "Error al ejecutar 'infracost diff': %s\n", stderr.String())
 		os.Exit(1)
 	}
-
-	// --- ¡EL GRAN CAMBIO! ---
-	// Simplemente imprimimos el JSON puro a la salida estándar.
 	fmt.Println(stdout.String())
 }
