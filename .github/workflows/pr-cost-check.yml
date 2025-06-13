@@ -8,36 +8,32 @@ jobs:
   cost-analysis:
     runs-on: ubuntu-latest
     steps:
-      # Paso 1: Descargar el código del repositorio
-      - name: Check out repository code
+      # Paso 1: Descargar el código - ¡CON LA HISTORIA COMPLETA!
+      - name: Check out full repository history
         uses: actions/checkout@v4
-
-      # ----- NUEVOS PASOS DE INSTALACIÓN -----
+        with:
+          # fetch-depth: 0 le dice a la acción que descargue todos los commits
+          # Esto es CRUCIAL para que nuestro comando 'git checkout main' funcione.
+          fetch-depth: 0
 
       # Paso 2: Instalar Go
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.22' # Usamos una versión específica
+          go-version: '1.22'
 
       # Paso 3: Instalar Terraform
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
-        # No necesita configuración extra, es muy simple
 
       # Paso 4: Instalar Infracost
-      # Aquí es donde usamos el secreto que acabamos de crear
       - name: Setup Infracost
         uses: infracost/actions/setup@v2
         with:
-          # Le pasamos la API key de forma segura desde los secretos de GitHub
           api-key: ${{ secrets.INFRACOST_API_KEY }}
 
-      # ----- PASOS DE VERIFICACIÓN -----
-      # Es una buena práctica confirmar que todo se instaló correctamente
-
-      - name: Verify tools installation
-        run: |
-          go version
-          terraform version
-          infracost --version
+      # ----- ¡EL GRAN CAMBIO ESTÁ AQUÍ! -----
+      # Paso 5: Ejecutar el análisis de costos con nuestra CLI
+      - name: Run FinOps Guardian Analysis
+        id: guardian_analysis # Le damos un ID a este paso para poder referenciar su salida más tarde
+        run: go run main.go main
