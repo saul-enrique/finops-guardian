@@ -13,26 +13,22 @@ jobs:
     name: Run Infracost diff
     runs-on: ubuntu-latest
     steps:
-      # Checkout de la rama base
       - name: Check out base code
         uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.base.ref }}
 
-      # Checkout del código del PR en una subcarpeta
       - name: Check out PR code
         uses: actions/checkout@v4
         with:
           path: 'pr'
 
       # --- ¡LA CORRECCIÓN ESTÁ AQUÍ! ---
-      # La acción correcta se llama 'comment', no 'diff'.
+      # La ruta correcta es 'infracost/infracost-action/comment@v2'
       - name: Run Infracost and Post Comment
-        uses: infracost/actions/comment@v2
+        uses: infracost/infracost-action/comment@v2
         with:
-          # Compara la subcarpeta 'pr' con la carpeta base
           path: ./pr/
           compare-to: ./
-          # El comportamiento 'update' es ideal, actualiza su propio comentario.
           behavior: update
           api-key: ${{ secrets.INFRACOST_API_KEY }}
