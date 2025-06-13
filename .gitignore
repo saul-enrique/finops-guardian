@@ -13,3 +13,4 @@ finops-guardian
 
 # Archivos temporales de Infracost
 infracost-base.json
+.infracost/

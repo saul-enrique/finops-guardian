@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"strings" // ¡NUEVO! Para construir nuestro string de reporte.
+	"strings"
 )
 
 type InfracostOutput struct {
@@ -16,14 +16,15 @@ type InfracostOutput struct {
 }
 
 func main() {
-	if len(os.Args) != 2 {
-		fmt.Fprintln(os.Stderr, "Uso: finops-guardian <rama_base>")
+    // AHORA ESPERAMOS 3 ARGUMENTOS
+	if len(os.Args) != 3 {
+		fmt.Fprintln(os.Stderr, "Uso: finops-guardian <rama_base> <rama_a_restaurar>")
 		os.Exit(1)
 	}
 	baseBranch := os.Args[1]
+	returnBranch := os.Args[2] // La rama a la que volver
 	baselineFile := "infracost-base.json"
 
-	// ... (Toda la lógica de checkout y diff se mantiene igual) ...
 	if err := exec.Command("git", "checkout", baseBranch).Run(); err != nil {
 		fmt.Fprintf(os.Stderr, "Error al cambiar a la rama base: %v\n", err)
 		os.Exit(1)
@@ -35,7 +36,9 @@ func main() {
 		os.Exit(1)
 	}
 
-	if err := exec.Command("git", "checkout", "-").Run(); err != nil {
+    // --- ¡LA CORRECCIÓN ESTÁ AQUÍ! ---
+    // Usamos el nombre de la rama explícito en lugar de '-'.
+	if err := exec.Command("git", "checkout", returnBranch).Run(); err != nil {
 		fmt.Fprintf(os.Stderr, "Error al volver a la rama de trabajo: %v\n", err)
 		os.Exit(1)
 	}
@@ -56,10 +59,8 @@ func main() {
 		os.Exit(1)
 	}
 
-	// --- ¡EL GRAN CAMBIO ESTÁ AQUÍ! ---
-	// En lugar de imprimir, construimos un comentario en formato Markdown.
 	var reportBuilder strings.Builder
-	reportBuilder.WriteString("### 🛡️ Reporte de FinOps Guardian 🛡️\n\n")
+	reportBuilder.WriteString("### 🛡️ Reporte de FinOps Guardian (Nuestro Bot) 🛡️\n\n")
 	reportBuilder.WriteString("| Descripción | Costo Mensual |\n")
 	reportBuilder.WriteString("| :--- | :--- |\n")
 	reportBuilder.WriteString(fmt.Sprintf("| Costo Anterior | **$%s** |\n", outputData.PastTotalMonthlyCost))
@@ -67,6 +68,14 @@ func main() {
 	reportBuilder.WriteString(fmt.Sprintf("| **Impacto del Cambio** | **$%s** |\n", outputData.DiffTotalMonthlyCost))
 
 	// Esta es la sintaxis especial para crear un "output" para la GitHub Action.
-	// Le decimos: "crea una variable de salida llamada 'report' con el contenido de nuestro comentario".
-	fmt.Printf("::set-output name=report::%s\n", reportBuilder.String())
+	// La sintaxis ha cambiado ligeramente en las nuevas versiones de Actions.
+    // `>> $GITHUB_OUTPUT` es la forma más moderna y robusta.
+	outputFile := os.Getenv("GITHUB_OUTPUT")
+	file, err := os.OpenFile(outputFile, os.O_APPEND|os.O_WRONLY, 0644)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "No se pudo abrir el archivo de salida de GitHub: %v\n", err)
+		os.Exit(1)
+	}
+	defer file.Close()
+	fmt.Fprintf(file, "report=%s\n", reportBuilder.String())
 }
