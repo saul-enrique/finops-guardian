@@ -1,26 +1,43 @@
-# El nombre que aparecerá en la pestaña "Actions" de GitHub
 name: FinOps Guardian - Cost Check
 
-# El disparador (trigger): ¿Cuándo debe ejecutarse este workflow?
 on:
-  # Lo ejecutamos en cada Pull Request que apunte a la rama 'main'
   pull_request:
     branches: [ main ]
 
-# Los trabajos (jobs) que se van a realizar
 jobs:
-  # Definimos un único trabajo llamado 'cost-analysis'
   cost-analysis:
-    # Le decimos a GitHub que use un ordenador virtual con la última versión de Ubuntu
     runs-on: ubuntu-latest
-
-    # Los pasos (steps) que ejecutará el trabajo, en orden
     steps:
-      # Paso 1: Descargar el código de nuestro repositorio en el ordenador virtual
-      # Esto es una acción pre-hecha por GitHub, es el primer paso en casi todos los workflows.
+      # Paso 1: Descargar el código del repositorio
       - name: Check out repository code
         uses: actions/checkout@v4
 
-      # Paso 2: Un simple paso para confirmar que el workflow se está ejecutando
-      - name: Say hello
-        run: echo "👋 Hello! The cost analysis workflow has started!"
+      # ----- NUEVOS PASOS DE INSTALACIÓN -----
+
+      # Paso 2: Instalar Go
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22' # Usamos una versión específica
+
+      # Paso 3: Instalar Terraform
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        # No necesita configuración extra, es muy simple
+
+      # Paso 4: Instalar Infracost
+      # Aquí es donde usamos el secreto que acabamos de crear
+      - name: Setup Infracost
+        uses: infracost/actions/setup@v2
+        with:
+          # Le pasamos la API key de forma segura desde los secretos de GitHub
+          api-key: ${{ secrets.INFRACOST_API_KEY }}
+
+      # ----- PASOS DE VERIFICACIÓN -----
+      # Es una buena práctica confirmar que todo se instaló correctamente
+
+      - name: Verify tools installation
+        run: |
+          go version
+          terraform version
+          infracost --version
