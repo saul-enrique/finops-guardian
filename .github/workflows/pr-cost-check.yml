@@ -31,18 +31,33 @@ jobs:
 
       - name: Run FinOps Guardian Analysis
         id: guardian_analysis
-        # --- ¡LA CORRECCIÓN ESTÁ AQUÍ! ---
-        # Le pasamos la rama del PR ('feature/setup-ci' en este caso) como segundo argumento.
+        # Ejecutamos la CLI. Su salida (el JSON) se capturará automáticamente.
         run: go run main.go main ${{ github.head_ref }}
 
-      - name: Post comment to PR
+      - name: Post Cost Report to PR
         uses: actions/github-script@v7
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
+            // Obtenemos el JSON puro del paso anterior
+            const output = ${{ toJSON(steps.guardian_analysis.outputs.stdout) }};
+            const data = JSON.parse(output);
+
+            // Construimos el cuerpo del comentario usando Javascript
+            const body = `
+            ### 🛡️ Reporte de FinOps Guardian (Bot Final) 🛡️
+
+            | Descripción | Costo Mensual |
+            | :--- | :--- |
+            | Costo Anterior | **$${data.pastTotalMonthlyCost || 0}** |
+            | Nuevo Costo | **$${data.totalMonthlyCost || 0}** |
+            | **Impacto del Cambio** | **$${data.diffTotalMonthlyCost || 0}** |
+            `;
+
+            // Publicamos el comentario
             github.rest.issues.createComment({
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: `${{ steps.guardian_analysis.outputs.report }}`
-            })
+              body: body
+            });
