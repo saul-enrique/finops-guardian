@@ -1,11 +1,12 @@
 package main
 
 import (
-	"bytes" // ¡NUEVO! Necesario para nuestros "buffers" de captura.
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
+	"strings" // ¡NUEVO! Para construir nuestro string de reporte.
 )
 
 type InfracostOutput struct {
@@ -16,14 +17,13 @@ type InfracostOutput struct {
 
 func main() {
 	if len(os.Args) != 2 {
-		fmt.Println("Uso: finops-guardian <rama_base>")
-		fmt.Println("Ejemplo: finops-guardian main")
+		fmt.Fprintln(os.Stderr, "Uso: finops-guardian <rama_base>")
 		os.Exit(1)
 	}
 	baseBranch := os.Args[1]
 	baselineFile := "infracost-base.json"
 
-	fmt.Printf("Analizando la rama base '%s' para crear la línea base...\n", baseBranch)
+	// ... (Toda la lógica de checkout y diff se mantiene igual) ...
 	if err := exec.Command("git", "checkout", baseBranch).Run(); err != nil {
 		fmt.Fprintf(os.Stderr, "Error al cambiar a la rama base: %v\n", err)
 		os.Exit(1)
@@ -34,45 +34,39 @@ func main() {
 		fmt.Fprintf(os.Stderr, "Error al crear la línea base de Infracost: %s\n", string(output))
 		os.Exit(1)
 	}
-	fmt.Printf("Línea base guardada en '%s'\n", baselineFile)
 
 	if err := exec.Command("git", "checkout", "-").Run(); err != nil {
 		fmt.Fprintf(os.Stderr, "Error al volver a la rama de trabajo: %v\n", err)
 		os.Exit(1)
 	}
 
-	fmt.Println("Comparando la rama actual con la línea base...")
 	diffCmd := exec.Command("infracost", "diff", "--path", ".", "--compare-to", baselineFile, "--format", "json", "--no-color")
-	
-    // --- LA CORRECCIÓN DEFINITIVA ESTÁ AQUÍ ---
-	// Creamos buffers separados para stdout y stderr.
-    var stdout, stderr bytes.Buffer
-    diffCmd.Stdout = &stdout // Le decimos al comando que escriba la salida estándar aquí.
-    diffCmd.Stderr = &stderr // Y la salida de error aquí.
-
-    // Ejecutamos el comando solo con Run(), que no combina las salidas.
-    err := diffCmd.Run()
-	if err != nil {
-        // Si hay un error, la razón estará en stderr.
+	var stdout, stderr bytes.Buffer
+	diffCmd.Stdout = &stdout
+	diffCmd.Stderr = &stderr
+	if err := diffCmd.Run(); err != nil {
 		fmt.Fprintf(os.Stderr, "Error al ejecutar 'infracost diff': %s\n", stderr.String())
 		os.Exit(1)
 	}
+	jsonOutput := stdout.Bytes()
 
-	// El JSON puro está ahora en stdout. Lo pasamos al analizador.
-    jsonOutput := stdout.Bytes()
-
-	fmt.Println("Análisis completado. Extrayendo resumen de costos...")
 	var outputData InfracostOutput
 	if err := json.Unmarshal(jsonOutput, &outputData); err != nil {
 		fmt.Fprintf(os.Stderr, "Error al analizar el JSON de Infracost: %v\n", err)
-        // Para depurar, imprimimos lo que recibimos que no es JSON válido.
-        fmt.Fprintf(os.Stderr, "Salida recibida:\n%s\n", string(jsonOutput))
 		os.Exit(1)
 	}
 
-	fmt.Println("\n--- 🛡️ Reporte de FinOps Guardian 🛡️ ---")
-	fmt.Printf("Costo Mensual Anterior: $%s\n", outputData.PastTotalMonthlyCost)
-	fmt.Printf("Nuevo Costo Mensual:    $%s\n", outputData.TotalMonthlyCost)
-	fmt.Printf("Impacto de este cambio:  $%s\n", outputData.DiffTotalMonthlyCost)
-	fmt.Println("------------------------------------")
+	// --- ¡EL GRAN CAMBIO ESTÁ AQUÍ! ---
+	// En lugar de imprimir, construimos un comentario en formato Markdown.
+	var reportBuilder strings.Builder
+	reportBuilder.WriteString("### 🛡️ Reporte de FinOps Guardian 🛡️\n\n")
+	reportBuilder.WriteString("| Descripción | Costo Mensual |\n")
+	reportBuilder.WriteString("| :--- | :--- |\n")
+	reportBuilder.WriteString(fmt.Sprintf("| Costo Anterior | **$%s** |\n", outputData.PastTotalMonthlyCost))
+	reportBuilder.WriteString(fmt.Sprintf("| Nuevo Costo | **$%s** |\n", outputData.TotalMonthlyCost))
+	reportBuilder.WriteString(fmt.Sprintf("| **Impacto del Cambio** | **$%s** |\n", outputData.DiffTotalMonthlyCost))
+
+	// Esta es la sintaxis especial para crear un "output" para la GitHub Action.
+	// Le decimos: "crea una variable de salida llamada 'report' con el contenido de nuestro comentario".
+	fmt.Printf("::set-output name=report::%s\n", reportBuilder.String())
 }
