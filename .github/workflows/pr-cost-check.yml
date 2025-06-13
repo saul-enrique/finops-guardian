@@ -2,7 +2,6 @@ name: FinOps Guardian - Cost Check
 
 on:
   pull_request:
-    branches: [ main ]
 
 permissions:
   contents: read
@@ -10,23 +9,29 @@ permissions:
 
 jobs:
   infracost:
-    name: Run Infracost diff
+    name: Infracost cost estimate
     runs-on: ubuntu-latest
     steps:
       - name: Check out base code
         uses: actions/checkout@v4
         with:
+          # Required for Infracost to get the baseline
           ref: ${{ github.event.pull_request.base.ref }}
 
       - name: Check out PR code
         uses: actions/checkout@v4
         with:
-          path: 'pr'
+          # Required for Infracost to get the proposed changes
+          path: pr
 
-      - name: Run Infracost and Post Comment
-        uses: infracost/infracost-action/comment@v2
+      # Esta es la única acción de Infracost que necesitamos.
+      # Le decimos el path del PR y ella se encarga del resto.
+      - name: Run Infracost
+        uses: infracost/infracost-action@v2
         with:
-          path: ./pr/
-          compare-to: ./
-          behavior: update
+          # El path del código del Pull Request
+          path: pr/
+          # La clave de API, pasada de forma segura
           api-key: ${{ secrets.INFRACOST_API_KEY }}
+          # El comportamiento: crear un comentario nuevo o actualizar uno existente.
+          behavior: update
