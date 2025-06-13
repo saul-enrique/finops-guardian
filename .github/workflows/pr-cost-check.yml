@@ -23,8 +23,6 @@ jobs:
         with:
           path: 'pr'
 
-      # --- ¡LA CORRECCIÓN ESTÁ AQUÍ! ---
-      # La ruta correcta es 'infracost/infracost-action/comment@v2'
       - name: Run Infracost and Post Comment
         uses: infracost/infracost-action/comment@v2
         with:
