@@ -1,0 +1,12 @@
+# Binarios compilados
+finops-guardian
+
+# Directorio de dependencias (si se usa)
+/vendor/
+
+# Archivos de sistema operativo
+.DS_Store
+
+# Archivos de configuración de IDEs
+.vscode/
+.idea/
