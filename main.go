@@ -2,15 +2,15 @@
 package main
 
 import (
-	"encoding/json" // Paquete para codificar y decodificar JSON
+	"bytes"          // Para construir strings de manera eficiente
+	"encoding/json"  // Paquete para codificar y decodificar JSON
+	"flag"           // ¡NUEVO! Paquete para manejar los flags de la línea de comandos
 	"fmt"            // Paquete para formatear e imprimir texto
 	"os"             // Paquete para interactuar con el sistema operativo (como leer archivos)
+	"text/template"  // ¡NUEVO! Paquete para crear plantillas de texto
 )
 
-// Estas son las "structs" de Go. Definen la estructura de los datos que esperamos
-// leer del JSON. Mapean los campos del JSON a campos en nuestro programa Go.
-// La parte `json:"..."` se llama "tag" y le dice a Go exactamente qué campo
-// del JSON corresponde a cada campo de la struct.
+// --- Las structs no cambian, son las mismas de antes ---
 
 // ResourceDiff representa un único recurso que ha cambiado.
 type ResourceDiff struct {
@@ -33,61 +33,82 @@ type Project struct {
 
 // InfracostOutput es la estructura de nivel superior que representa todo el archivo JSON.
 type InfracostOutput struct {
-	TotalMonthlyCost   string    `json:"totalMonthlyCost"`
 	DiffTotalMonthlyCost string    `json:"diffTotalMonthlyCost"`
 	Projects           []Project `json:"projects"`
 }
 
+// ¡NUEVA FUNCIÓN! Esta función toma los datos de Infracost y genera el reporte
+// como un string. Esto separa la "lógica" de la "presentación".
+// Usamos plantillas para que sea más fácil cambiar el formato del reporte en el futuro.
+func generateReport(output InfracostOutput) (string, error) {
+	// Plantilla para el comentario. Usamos la sintaxis de Go templates.
+	const reportTemplate = `
+--------------------------------------------------
+📊 **Reporte de FinOps Guardian** 📈
 
-// La función main es el punto de entrada de cualquier programa en Go.
+Este cambio aumentará los costos mensuales estimados en **${{ .DiffTotalMonthlyCost }}**.
+
+**Recursos añadidos/modificados:**
+{{- range .Projects }}
+{{- range .Diff.Resources }}
+  - ` + "`{{ .Name }}`" + ` ({{ .ResourceType }}): +${{ .MonthlyCost }}
+{{- end }}
+{{- end }}
+--------------------------------------------------
+`
+	// `template.New` crea una nueva plantilla.
+	// `template.Must` envuelve la creación y hace 'panic' si hay un error en la plantilla.
+	tmpl, err := template.New("report").Parse(reportTemplate)
+	if err != nil {
+		// Este error es para el programador, si la plantilla está mal escrita.
+		return "", fmt.Errorf("error al parsear la plantilla del reporte: %w", err)
+	}
+
+	// Usaremos un buffer para escribir el resultado de la plantilla.
+	var report bytes.Buffer
+	// `tmpl.Execute` aplica los datos (output) a la plantilla y escribe el resultado en el buffer.
+	err = tmpl.Execute(&report, output)
+	if err != nil {
+		// Este error puede ocurrir si los datos no coinciden con la plantilla.
+		return "", fmt.Errorf("error al ejecutar la plantilla: %w", err)
+	}
+
+	return report.String(), nil
+}
+
+// La función main ahora se enfoca en la orquestación.
 func main() {
+	// Paso 1: Definir y parsear los flags de la línea de comandos.
+	// flag.String define un flag llamado "file", con un valor por defecto "infracost-output.json",
+	// y un texto de ayuda.
+	filePath := flag.String("file", "infracost-output.json", "Ruta al archivo JSON de salida de Infracost.")
+	flag.Parse() // Procesa los argumentos de la línea de comandos.
+
 	fmt.Println("🚀 Iniciando FinOps Guardian...")
 
-	// Paso 1: Leer el contenido del archivo JSON de muestra.
-	// os.ReadFile devuelve los datos del archivo y un posible error.
-	jsonData, err := os.ReadFile("infracost-output.json")
+	// Paso 2: Leer el archivo JSON usando la ruta del flag (*filePath).
+	// ¡Ojo al asterisco! Se usa para obtener el valor del puntero que devuelve flag.String.
+	jsonData, err := os.ReadFile(*filePath)
 	if err != nil {
-		// Si hay un error (ej. el archivo no existe), el programa se detendrá
-		// y mostrará el error. Esto es crucial para un código robusto.
-		fmt.Printf("Error leyendo el archivo JSON: %v\n", err)
+		fmt.Printf("Error: No se pudo leer el archivo '%s': %v\n", *filePath, err)
 		os.Exit(1)
 	}
 
-	// Paso 2: Preparar una variable para almacenar los datos decodificados.
-	// Creamos una variable llamada 'output' que tiene la estructura de InfracostOutput.
+	// Paso 3: Decodificar el JSON (sin cambios aquí).
 	var output InfracostOutput
-
-	// Paso 3: Decodificar (o "Unmarshal") el JSON.
-	// Tomamos los datos del archivo (jsonData) y los vertimos en nuestra
-	// variable 'output'. Go automáticamente mapeará los campos gracias a las structs.
 	err = json.Unmarshal(jsonData, &output)
 	if err != nil {
-		fmt.Printf("Error decodificando el JSON: %v\n", err)
+		fmt.Printf("Error: El archivo '%s' no es un JSON de Infracost válido: %v\n", *filePath, err)
 		os.Exit(1)
 	}
 
-	// Paso 4: ¡Éxito! Imprimir los resultados que nos interesan.
-	// Ahora podemos acceder a los datos de forma nativa en Go, ej: output.DiffTotalMonthlyCost
-	fmt.Println("--------------------------------------------------")
-	fmt.Printf("📊 Reporte de FinOps Guardian 📈\n")
-	fmt.Printf(
-		"Este cambio aumentará los costos mensuales estimados en $%s.\n",
-		output.DiffTotalMonthlyCost,
-	)
-
-	fmt.Println("Recursos añadidos/modificados:")
-	// Iteramos a través de cada recurso en el desglose de la diferencia.
-	for _, project := range output.Projects {
-		if len(project.Diff.Resources) > 0 {
-			for _, resource := range project.Diff.Resources {
-				fmt.Printf(
-					"  ■ %s (%s): +$%s\n",
-					resource.Name,
-					resource.ResourceType,
-					resource.MonthlyCost,
-				)
-			}
-		}
+	// Paso 4: Generar el reporte llamando a nuestra nueva función.
+	report, err := generateReport(output)
+	if err != nil {
+		fmt.Printf("Error al generar el reporte: %v\n", err)
+		os.Exit(1)
 	}
-	fmt.Println("--------------------------------------------------")
+
+	// Paso 5: Imprimir el reporte final.
+	fmt.Println(report)
 }
