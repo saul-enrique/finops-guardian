@@ -15,3 +15,29 @@ resource "aws_s3_bucket" "website_bucket" {
     Environment = "Dev"
   }
 }
+// --- NUEVO RECURSO AÑADIDO EN ESTA RAMA ---
+// Una pequeña instancia de servidor EC2 de tipo t2.micro
+// que normalmente está cubierta por la capa gratuita de AWS,
+// pero que Infracost identificará como un costo añadido.
+resource "aws_instance" "web_server" {
+  ami           = "ami-0c55b159cbfafe1f0" // Un ejemplo de AMI de Amazon Linux 2
+  instance_type = "t2.micro"
+
+  tags = {
+    Name = "WebApp Server"
+  }
+}
+resource "aws_instance" "another_server" {
+  ami           = "ami-0c55b159cbfafe1f0"
+  instance_type = "t2.small" # Un tipo diferente para que el costo sea distinto
+}
+# Simulación de una nueva base de datos
+resource "aws_db_instance" "default" {
+  allocated_storage    = 10
+  engine               = "mysql"
+  engine_version       = "8.0"
+  instance_class       = "db.t3.micro"
+  username             = "foo"
+  password             = "foobarbaz"
+  skip_final_snapshot  = true
+}
