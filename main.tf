@@ -19,3 +19,11 @@ resource "aws_db_instance" "showcase_db" {
   password             = "MustBeVerySecret"
   skip_final_snapshot  = true
 }
+# Demostración final para el portafolio
+resource "aws_alb" "application_load_balancer" {
+  name               = "final-demo-alb"
+  internal           = false
+  load_balancer_type = "application"
+  security_groups    = []
+  subnets            = ["subnet-123456", "subnet-abcdef"]
+}
