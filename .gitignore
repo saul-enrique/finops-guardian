@@ -10,3 +10,7 @@ finops-guardian
 # Archivos de configuración de IDEs
 .vscode/
 .idea/
+
+# Archivos temporales de Infracost
+infracost-base.json
+.infracost/

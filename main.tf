@@ -11,6 +11,20 @@ resource "aws_s3_bucket" "website_bucket" {
   }
 }
 
+resource "aws_instance" "web_server" {
+    ami           = "ami-0c55b159cbfafe1f0" // Un ejemplo de AMI de Amazon Linux 2
+    instance_type = "t2.micro"
+
+    tags = {
+      Name = "WebApp Server"
+    }
+}
+
+resource "aws_instance" "another_server" {
+    ami           = "ami-0c55b159cbfafe1f0"
+    instance_type = "t2.small"
+}
+
 resource "aws_db_instance" "final_db" {
   allocated_storage    = 10
   engine               = "mysql"
