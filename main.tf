@@ -19,3 +19,11 @@ resource "aws_db_instance" "showcase_db" {
   password             = "MustBeVerySecret"
   skip_final_snapshot  = true
 }
+# Prueba final: Añadir un Balanceador de Carga
+resource "aws_lb" "test_lb" {
+  name               = "test-lb-finops-guardian"
+  internal           = false
+  load_balancer_type = "application"
+  security_groups    = [] # Normalmente se necesitan, pero para la estimación de costos no es crucial
+  subnets            = ["subnet-123456", "subnet-abcdef"] # Se necesitan subnets de ejemplo
+}
