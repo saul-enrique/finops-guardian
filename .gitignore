@@ -1,0 +1,8 @@
+# Archivo .gitignore
+
+# Binario compilado de nuestro programa
+# Usaremos 'finops-guardian' como el nombre del ejecutable
+finops-guardian
+
+# Archivos del sistema operativo
+.DS_Store

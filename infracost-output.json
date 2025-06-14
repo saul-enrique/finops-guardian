@@ -1,0 +1,74 @@
+{
+  "version": "0.10.16",
+  "currency": "USD",
+  "pastTotalHourlyCost": "0.015",
+  "pastTotalMonthlyCost": "10.95",
+  "totalHourlyCost": "0.305",
+  "totalMonthlyCost": "222.65",
+  "diffTotalHourlyCost": "0.290",
+  "diffTotalMonthlyCost": "211.70",
+  "timeGenerated": "2025-06-14T02:45:00Z",
+  "projects": [
+    {
+      "name": "ejemplo-terraform",
+      "pastBreakdown": {
+        "totalHourlyCost": "0.015",
+        "totalMonthlyCost": "10.95",
+        "resources": [
+          {
+            "name": "aws_s3_bucket.existente",
+            "resourceType": "aws_s3_bucket",
+            "subresources": [],
+            "hourlyCost": "0.015",
+            "monthlyCost": "10.95"
+          }
+        ]
+      },
+      "breakdown": {
+        "totalHourlyCost": "0.305",
+        "totalMonthlyCost": "222.65",
+        "resources": [
+          {
+            "name": "aws_s3_bucket.existente",
+            "resourceType": "aws_s3_bucket",
+            "subresources": [],
+            "hourlyCost": "0.015",
+            "monthlyCost": "10.95"
+          },
+          {
+            "name": "aws_instance.servidor_web",
+            "resourceType": "aws_instance",
+            "subresources": [],
+            "hourlyCost": "0.01",
+            "monthlyCost": "7.30"
+          },
+          {
+            "name": "aws_db_instance.base_de_datos",
+            "resourceType": "aws_db_instance",
+            "subresources": [],
+            "hourlyCost": "0.28",
+            "monthlyCost": "204.40"
+          }
+        ]
+      },
+      "diff": {
+        "totalHourlyCost": "0.290",
+        "totalMonthlyCost": "211.70",
+        "resources": [
+           {
+            "name": "aws_instance.servidor_web",
+            "resourceType": "aws_instance",
+            "hourlyCost": "0.01",
+            "monthlyCost": "7.30"
+          },
+          {
+            "name": "aws_db_instance.base_de_datos",
+            "resourceType": "aws_db_instance",
+            "hourlyCost": "0.28",
+            "monthlyCost": "204.40"
+          }
+        ]
+      }
+    }
+  ]
+}
