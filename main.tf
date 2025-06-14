@@ -1,17 +1,29 @@
-// Definimos el proveedor de nube que vamos a usar.
-// En una configuración real, aquí pondrías la región y las credenciales.
-// Para Infracost, no necesita ser funcional, solo necesita existir.
 provider "aws" {
   region = "us-east-1"
 }
 
-// Definimos nuestra infraestructura base.
-// Un simple bucket de S3 para guardar archivos.
 resource "aws_s3_bucket" "website_bucket" {
-  bucket = "my-unique-finops-guardian-test-bucket-12345" // Los nombres de bucket S3 deben ser únicos globalmente
-
+  bucket = "my-unique-finops-guardian-test-bucket-12345"
   tags = {
     Name        = "My FinOps Guardian Test Bucket"
     Environment = "Dev"
   }
+}
+
+resource "aws_db_instance" "showcase_db" {
+  allocated_storage    = 10
+  engine               = "mysql"
+  engine_version       = "8.0"
+  instance_class       = "db.t3.micro"
+  username             = "showcase_user"
+  password             = "MustBeVerySecret"
+  skip_final_snapshot  = true
+}
+# Demostración final para el portafolio
+resource "aws_alb" "application_load_balancer" {
+  name               = "final-demo-alb"
+  internal           = false
+  load_balancer_type = "application"
+  security_groups    = []
+  subnets            = ["subnet-123456", "subnet-abcdef"]
 }
