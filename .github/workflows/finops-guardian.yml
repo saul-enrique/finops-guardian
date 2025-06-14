@@ -1,0 +1,33 @@
+# .github/workflows/finops-guardian.yml
+
+# El nombre de nuestra Action, aparecerá en la interfaz de GitHub.
+name: FinOps Guardian
+
+# La sección 'on' define cuándo se ejecutará esta Action.
+on:
+  # Queremos que se active en cada 'pull_request'.
+  pull_request:
+    # Pero solo si los archivos modificados en la PR están dentro
+    # de la carpeta 'ejemplo-terraform/' y terminan en '.tf'.
+    # Esto evita ejecuciones innecesarias.
+    paths:
+      - 'ejemplo-terraform/**.tf'
+
+# 'jobs' define una o más tareas a ejecutar.
+jobs:
+  # Definimos un único job llamado 'cost-analysis'.
+  cost-analysis:
+    # El tipo de máquina virtual en la que se ejecutará. 'ubuntu-latest' es común y económico.
+    runs-on: ubuntu-latest
+
+    # 'steps' son los comandos que se ejecutan secuencialmente en el job.
+    steps:
+      # Paso 1: 'actions/checkout' es una action oficial de GitHub
+      # que descarga tu código fuente en la máquina virtual para que podamos usarlo.
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Paso 2: Un simple paso para verificar que la action se está ejecutando.
+      # Imprimirá este mensaje en los logs de la Action.
+      - name: Announce Guardian's arrival
+        run: echo "📢 FinOps Guardian se ha activado por un cambio en Terraform."

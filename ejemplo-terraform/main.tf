@@ -26,3 +26,5 @@ resource "aws_db_instance" "base_de_datos" {
   password             = "una-contraseña-muy-segura"
   skip_final_snapshot  = true
 }
+
+# Este es el cambio que activará la action
