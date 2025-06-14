@@ -12,24 +12,17 @@ jobs:
     name: Infracost cost estimate
     runs-on: ubuntu-latest
     steps:
-      - name: Check out base branch
-        uses: actions/checkout@v4
+      # Esta acción necesita la historia para comparar, pero no mucha.
+      # `fetch-depth: 2` es la recomendación oficial.
+      - uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.pull_request.base.sha }}
+          fetch-depth: 2
 
-      - name: Setup Infracost
-        uses: infracost/infracost-github-action@v2
+      # Esta es la única acción de Infracost que necesitamos.
+      # Ella se encarga de TODO: instalar, comparar, y comentar.
+      - uses: infracost/infracost-github-action@v2
         with:
+          # No necesitamos especificar la base. La acción lo detecta automáticamente.
+          path: .
           api-key: ${{ secrets.INFRACOST_API_KEY }}
-
-      - name: Check out PR branch
-        uses: actions/checkout@v4
-        with:
-          path: pr
-
-      - name: Run Infracost
-        uses: infracost/infracost-github-action@v2
-        with:
-          path: pr/
           behavior: update
-          api-key: ${{ secrets.INFRACOST_API_KEY }}
