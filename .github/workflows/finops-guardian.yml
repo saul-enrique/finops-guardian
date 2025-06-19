@@ -1,4 +1,4 @@
-# .github/workflows/finops-guardian.yml (Versión Final de la Fase 2)
+# .github/workflows/finops-guardian.yml (Versión VICTORIA)
 
 name: FinOps Guardian
 
@@ -7,8 +7,6 @@ on:
     paths:
       - 'ejemplo-terraform/**.tf'
 
-# ¡NUEVO! Añadimos una sección de 'permissions' para darle al job
-# el permiso de escribir comentarios en las Pull Requests.
 permissions:
   pull-requests: write
 
@@ -25,12 +23,17 @@ jobs:
         with:
           go-version: '1.22'
 
-      # CORRECCIÓN FINAL: Construir usando la ruta del módulo en lugar de la ruta del archivo.
-      # Esta es la forma canónica y más robusta.
+      # ¡¡¡LA CLAVE DE TODO!!!
+      # Este paso le dice a Go que prepare el entorno, descargue las
+      # dependencias y ordene el go.mod y go.sum.
+      - name: Download Go Modules
+        run: go mod tidy
+
+      # Ahora que el entorno está listo, podemos usar la ruta relativa simple.
+      # Es más limpia y ahora funcionará.
       - name: Build FinOps Guardian CLI
-        run: go build -v -o finops-guardian github.com/saul-enrique/finops-guardian/cmd/finops-guardian
+        run: go build -v -o finops-guardian ./cmd/finops-guardian/
       
-      # Este paso no cambia, captura la salida de forma robusta.
       - name: Run Guardian and capture report
         id: guardian_run
         run: |
@@ -40,17 +43,11 @@ jobs:
           echo "$REPORT" >> $GITHUB_OUTPUT
           echo "$EOF" >> $GITHUB_OUTPUT
 
-      # ¡EL GRAN FINAL! Publicar el reporte como un comentario.
       - name: Post report as PR comment
         uses: actions/github-script@v7
         with:
-          # El token de GitHub se provee automáticamente. Tiene los permisos
-          # que definimos en la sección 'permissions' de arriba.
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            // Usamos un script de Javascript para interactuar con la API de GitHub.
-            // context.issue.number es el número de la PR actual.
-            // steps.guardian_run.outputs.report es el reporte que capturamos.
             github.rest.issues.createComment({
               owner: context.repo.owner,
               repo: context.repo.repo,
