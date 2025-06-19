@@ -10,38 +10,38 @@ on:
 jobs:
   cost-analysis:
     runs-on: ubuntu-latest
+    
+    # CORRECCIÓN: Definir el directorio de trabajo por defecto para todos los pasos.
+    defaults:
+      run:
+        working-directory: ${{ github.workspace }}
+
     steps:
-      # Paso 1: Checkout del código (sin cambios)
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # Paso 2 (NUEVO): Configurar el entorno de Go.
-      # Esta action oficial ('actions/setup-go') instala una versión específica de Go
-      # en la máquina virtual, preparándola para compilar nuestro código.
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.22' # Usamos una versión específica para consistencia
+          go-version: '1.22'
 
-      # Paso 3 (NUEVO): Compilar la CLI.
-      # Ejecutamos el mismo comando 'go build' que usamos localmente.
-      # Esto crea el binario 'finops-guardian' dentro del entorno de la action.
+      # PASO DE DEPURACIÓN: Listar archivos para ver la estructura.
+      - name: List files in workspace
+        run: ls -R
+
       - name: Build FinOps Guardian CLI
         run: go build -o finops-guardian ./cmd/finops-guardian/
 
-      # Paso 4 (NUEVO y CRÍTICO): Ejecutar la CLI y capturar la salida.
-      # Le damos un 'id' a este paso para poder referenciar su salida más tarde.
+      # CORRECCIÓN: Forma más robusta de capturar la salida multilínea.
       - name: Run Guardian and capture output
         id: guardian_run
-        # El comando 'run' ejecuta nuestro binario compilado.
-        # Luego, tomamos su salida y la guardamos en una variable de salida de GitHub
-        # llamada 'report'. Esto nos permite pasar el reporte a pasos posteriores.
         run: |
-          echo "report=$(./finops-guardian --file infracost-output.json)" >> $GITHUB_OUTPUT
-      
-      # Paso 5 (NUEVO): Imprimir la salida capturada para depuración.
-      # Usamos la sintaxis ${{ }} para acceder a las salidas del paso con id 'guardian_run'.
-      # Estamos verificando que capturamos el reporte correctamente.
+          REPORT=$(./finops-guardian --file infracost-output.json)
+          EOF=$(dd if=/dev/urandom bs=15 count=1 status=none | base64)
+          echo "report<<$EOF" >> $GITHUB_OUTPUT
+          echo "$REPORT" >> $GITHUB_OUTPUT
+          echo "$EOF" >> $GITHUB_OUTPUT
+
       - name: Print captured report
         run: |
           echo "--- Reporte Capturado ---"
