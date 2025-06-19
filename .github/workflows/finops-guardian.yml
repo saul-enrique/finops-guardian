@@ -1,4 +1,4 @@
-# .github/workflows/finops-guardian.yml (Versión BALA DE PLATA)
+# .github/workflows/finops-guardian.yml (Versión Final, Simplificada y Correcta)
 
 name: FinOps Guardian
 
@@ -17,26 +17,22 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        # Esta acción clona el repo en un subdirectorio con su mismo nombre.
 
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
           go-version: '1.22'
 
-      # ¡LA SOLUCIÓN! Añadimos 'working-directory' a cada paso relevante
-      # para forzarlo a ejecutarse DENTRO del directorio del repositorio clonado.
+      # NO hay 'working-directory'. Los comandos se ejecutan en la raíz.
+
       - name: Download Go Modules
-        working-directory: ./finops-guardian
         run: go mod tidy
 
       - name: Build FinOps Guardian CLI
-        working-directory: ./finops-guardian
         run: go build -v -o finops-guardian ./cmd/finops-guardian/
       
       - name: Run Guardian and capture report
         id: guardian_run
-        working-directory: ./finops-guardian
         run: |
           REPORT=$(./finops-guardian --file infracost-output.json)
           EOF=$(dd if=/dev/urandom bs=15 count=1 status=none | base64)
