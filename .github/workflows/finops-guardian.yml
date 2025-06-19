@@ -1,6 +1,6 @@
-# .github/workflows/finops-guardian.yml
+# .github/workflows/finops-guardian.yml (Versión de Depuración)
 
-name: FinOps Guardian
+name: FinOps Guardian (Debug Build)
 
 on:
   pull_request:
@@ -11,11 +11,6 @@ jobs:
   cost-analysis:
     runs-on: ubuntu-latest
     
-    # CORRECCIÓN: Definir el directorio de trabajo por defecto para todos los pasos.
-    defaults:
-      run:
-        working-directory: ${{ github.workspace }}
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -25,25 +20,25 @@ jobs:
         with:
           go-version: '1.22'
 
-      # PASO DE DEPURACIÓN: Listar archivos para ver la estructura.
-      - name: List files in workspace
-        run: ls -R
-
-      - name: Build FinOps Guardian CLI
-        run: go build -o finops-guardian ./cmd/finops-guardian/
-
-      # CORRECCIÓN: Forma más robusta de capturar la salida multilínea.
-      - name: Run Guardian and capture output
-        id: guardian_run
+      # PASO DE DEPURACIÓN CRÍTICO
+      - name: 1. Show Directory Structure
         run: |
-          REPORT=$(./finops-guardian --file infracost-output.json)
-          EOF=$(dd if=/dev/urandom bs=15 count=1 status=none | base64)
-          echo "report<<$EOF" >> $GITHUB_OUTPUT
-          echo "$REPORT" >> $GITHUB_OUTPUT
-          echo "$EOF" >> $GITHUB_OUTPUT
-
-      - name: Print captured report
+          echo "--- Current working directory ---"
+          pwd
+          echo "--- Listing contents of the workspace (recursively) ---"
+          ls -R
+      
+      # NUEVO ENFOQUE: Compilar con más información
+      - name: 2. Attempt to Build with Verbose Output
         run: |
-          echo "--- Reporte Capturado ---"
-          echo "${{ steps.guardian_run.outputs.report }}"
-          echo "--------------------------"
+          echo "--- Attempting to build Go binary ---"
+          # Usamos el flag -v para que Go nos diga qué está haciendo.
+          go build -v -o finops-guardian ./cmd/finops-guardian/
+
+      # Este paso solo se ejecutará si el build tiene éxito.
+      - name: 3. Verify and Run
+        run: |
+          echo "--- Listing files after build to confirm binary exists ---"
+          ls -l
+          echo "--- Running FinOps Guardian ---"
+          ./finops-guardian --file infracost-output.json
