@@ -1,11 +1,16 @@
-# .github/workflows/finops-guardian.yml (Versión de Depuración)
+# .github/workflows/finops-guardian.yml (Versión Final de la Fase 2)
 
-name: FinOps Guardian (Debug Build)
+name: FinOps Guardian
 
 on:
   pull_request:
     paths:
       - 'ejemplo-terraform/**.tf'
+
+# ¡NUEVO! Añadimos una sección de 'permissions' para darle al job
+# el permiso de escribir comentarios en las Pull Requests.
+permissions:
+  pull-requests: write
 
 jobs:
   cost-analysis:
@@ -20,25 +25,35 @@ jobs:
         with:
           go-version: '1.22'
 
-      # PASO DE DEPURACIÓN CRÍTICO
-      - name: 1. Show Directory Structure
-        run: |
-          echo "--- Current working directory ---"
-          pwd
-          echo "--- Listing contents of the workspace (recursively) ---"
-          ls -R
+      # CORRECCIÓN FINAL: Construir usando la ruta del módulo en lugar de la ruta del archivo.
+      # Esta es la forma canónica y más robusta.
+      - name: Build FinOps Guardian CLI
+        run: go build -v -o finops-guardian github.com/saul-enrique/finops-guardian/cmd/finops-guardian
       
-      # NUEVO ENFOQUE: Compilar con más información
-      - name: 2. Attempt to Build with Verbose Output
+      # Este paso no cambia, captura la salida de forma robusta.
+      - name: Run Guardian and capture report
+        id: guardian_run
         run: |
-          echo "--- Attempting to build Go binary ---"
-          # Usamos el flag -v para que Go nos diga qué está haciendo.
-          go build -v -o finops-guardian ./cmd/finops-guardian/
+          REPORT=$(./finops-guardian --file infracost-output.json)
+          EOF=$(dd if=/dev/urandom bs=15 count=1 status=none | base64)
+          echo "report<<$EOF" >> $GITHUB_OUTPUT
+          echo "$REPORT" >> $GITHUB_OUTPUT
+          echo "$EOF" >> $GITHUB_OUTPUT
 
-      # Este paso solo se ejecutará si el build tiene éxito.
-      - name: 3. Verify and Run
-        run: |
-          echo "--- Listing files after build to confirm binary exists ---"
-          ls -l
-          echo "--- Running FinOps Guardian ---"
-          ./finops-guardian --file infracost-output.json
+      # ¡EL GRAN FINAL! Publicar el reporte como un comentario.
+      - name: Post report as PR comment
+        uses: actions/github-script@v7
+        with:
+          # El token de GitHub se provee automáticamente. Tiene los permisos
+          # que definimos en la sección 'permissions' de arriba.
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            // Usamos un script de Javascript para interactuar con la API de GitHub.
+            // context.issue.number es el número de la PR actual.
+            // steps.guardian_run.outputs.report es el reporte que capturamos.
+            github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: `${{ steps.guardian_run.outputs.report }}`
+            });
